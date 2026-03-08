@@ -7,6 +7,7 @@ import PropertyDetailPage from "./pages/PropertyDetailPage"
 import LoginPage from "./pages/LoginPage"
 import RegisterPage from "./pages/RegisterPage"
 import ForgotPasswordPage from "./pages/ForgotPasswordPage"
+import UserDashboard from "./pages/user/Dashboard"
 import OwnerDashboard from "./pages/owner/Dashboard"
 import OwnerPropertiesPage from "./pages/owner/PropertiesPage"
 import OwnerAddPropertyPage from "./pages/owner/AddPropertyPage"
@@ -17,7 +18,8 @@ import AdminPropertiesPage from "./pages/admin/PropertiesPage"
 import AdminBookingsPage from "./pages/admin/BookingsPage"
 
 function ProtectedRoute({ children, requiredType }) {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, initializing, user } = useAuth()
+  if (initializing) return null
   if (!isAuthenticated) return <Navigate to="/login" replace />
   if (requiredType && user?.type !== requiredType) return <Navigate to="/" replace />
   return children
@@ -33,6 +35,8 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+        <Route path="/user/dashboard" element={<ProtectedRoute requiredType="user"><UserDashboard /></ProtectedRoute>} />
 
         <Route path="/owner" element={<ProtectedRoute requiredType="owner"><OwnerDashboard /></ProtectedRoute>} />
         <Route path="/owner/properties" element={<ProtectedRoute requiredType="owner"><OwnerPropertiesPage /></ProtectedRoute>} />

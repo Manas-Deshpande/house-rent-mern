@@ -12,6 +12,7 @@ interface AuthContextType {
   user: AuthUser | null
   token: string | null
   isAuthenticated: boolean
+  initializing: boolean
   login: (email: string, password: string) => Promise<AuthUser>
   register: (name: string, email: string, password: string, type: string) => Promise<void>
   logout: () => void
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState<string | null>(null)
+  const [initializing, setInitializing] = useState(true)
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token')
@@ -30,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(savedToken)
       setUser(JSON.parse(savedUser))
     }
+    setInitializing(false)
   }, [])
 
   const login = async (email: string, password: string): Promise<AuthUser> => {
@@ -53,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user, initializing, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   )

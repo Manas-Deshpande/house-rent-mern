@@ -111,7 +111,7 @@ export default function OwnerAddPropertyPage() {
                 <div className="mt-1.5 flex justify-center rounded-xl border-2 border-dashed border-border px-6 py-8">
                   <div className="text-center">
                     <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
-                    <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp"
+                    <input type="file" accept=".jpeg,.jpg,.png,.webp,image/jpeg,image/png,image/webp"
                       onChange={(e) => setImageFile(e.target.files[0])}
                       className="mt-2 text-sm text-muted-foreground" />
                     {imageFile && <p className="mt-1 text-sm text-accent">{imageFile.name}</p>}

@@ -41,8 +41,17 @@ const upload = multer({
 // All owner routes require authentication and owner role
 router.use(verifyToken, isOwner);
 
-router.post("/property", upload.single("propertyImage"), addProperty);
-router.put("/property/:id", upload.single("propertyImage"), updateProperty);
+const handleUpload = (req, res, next) => {
+  upload.single("propertyImage")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
+    }
+    next();
+  });
+};
+
+router.post("/property", handleUpload, addProperty);
+router.put("/property/:id", handleUpload, updateProperty);
 router.delete("/property/:id", deleteProperty);
 router.get("/properties", getOwnerProperties);
 router.get("/bookings", getOwnerBookings);

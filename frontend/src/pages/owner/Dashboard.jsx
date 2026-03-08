@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Building2, CalendarCheck, Plus, ArrowRight, DollarSign } from "lucide-react"
+import { Building2, CalendarCheck, Plus, DollarSign } from "lucide-react"
+import { toast } from "sonner"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,32 @@ export default function OwnerDashboard() {
     { label: "Active Bookings", value: bookings.filter(b => b.bookingStatus === "confirmed").length, icon: CalendarCheck },
     { label: "Total Revenue", value: "$" + totalRevenue.toLocaleString(), icon: DollarSign },
   ]
+
+  const completedRent = bookings.filter(
+    b => b.bookingStatus === "completed" && b.propertId?.propertyAdType === "rent"
+  )
+  const completedSale = bookings.filter(
+    b => b.bookingStatus === "completed" && b.propertId?.propertyAdType === "sale"
+  )
+
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await bookingApi.updateStatus(id, newStatus)
+      setBookings(prev =>
+        prev.map(b => b._id === id ? { ...b, bookingStatus: newStatus } : b)
+      )
+      toast.success(`Booking ${newStatus}`)
+    } catch (err) {
+      toast.error("Failed to update booking", { description: err.message })
+    }
+  }
+
+  const statusColors = {
+    confirmed: "bg-green-100 text-green-800",
+    pending: "bg-yellow-100 text-yellow-800",
+    completed: "bg-blue-100 text-blue-800",
+    rejected: "bg-red-100 text-red-800",
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -60,37 +87,6 @@ export default function OwnerDashboard() {
             ))}
           </div>
 
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
-            <Link to="/owner/properties">
-              <div className="group flex items-center justify-between rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary hover:shadow-md">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                    <Building2 className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">My Properties</h3>
-                    <p className="text-sm text-muted-foreground">View and manage your listings</p>
-                  </div>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
-              </div>
-            </Link>
-            <Link to="/owner/bookings">
-              <div className="group flex items-center justify-between rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary hover:shadow-md">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                    <CalendarCheck className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">My Bookings</h3>
-                    <p className="text-sm text-muted-foreground">View booking requests</p>
-                  </div>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
-              </div>
-            </Link>
-          </div>
-
           <div className="mt-8">
             <h2 className="text-xl font-bold text-foreground">Recent Bookings</h2>
             <div className="mt-4 overflow-x-auto rounded-xl border border-border">
@@ -101,6 +97,7 @@ export default function OwnerDashboard() {
                     <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Guest</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Phone</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Status</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -110,19 +107,114 @@ export default function OwnerDashboard() {
                       <td className="px-4 py-3 text-sm text-foreground">{booking.userName}</td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{booking.phone}</td>
                       <td className="px-4 py-3">
-                        <span className={"inline-flex rounded-full px-2 py-0.5 text-xs font-medium " + (
-                          booking.bookingStatus === "confirmed" ? "bg-green-100 text-green-800" :
-                          booking.bookingStatus === "pending" ? "bg-yellow-100 text-yellow-800" :
-                          "bg-red-100 text-red-800"
-                        )}>{booking.bookingStatus}</span>
+                        <span className={"inline-flex rounded-full px-2 py-0.5 text-xs font-medium " + (statusColors[booking.bookingStatus] || "bg-gray-100 text-gray-800")}>
+                          {booking.bookingStatus}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {booking.bookingStatus === "pending" && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleStatusChange(booking._id, "confirmed")}
+                              className="rounded-lg bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800 hover:bg-green-200"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              onClick={() => handleStatusChange(booking._id, "rejected")}
+                              className="rounded-lg bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800 hover:bg-red-200"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                        {booking.bookingStatus === "confirmed" && (
+                          <button
+                            onClick={() => handleStatusChange(booking._id, "completed")}
+                            className="rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-800 hover:bg-blue-200"
+                          >
+                            Mark Completed
+                          </button>
+                        )}
+                        {(booking.bookingStatus === "rejected" || booking.bookingStatus === "completed") && (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
                   {bookings.length === 0 && (
-                    <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">No bookings yet</td></tr>
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">No bookings yet</td></tr>
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+          {/* Completed sections */}
+          <div className="mt-10 grid gap-8 md:grid-cols-2">
+            {/* Properties Rented */}
+            <div>
+              <h2 className="text-xl font-bold text-foreground">Properties Rented</h2>
+              <div className="mt-4 overflow-x-auto rounded-xl border border-border">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/50">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Property</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Rented By</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {completedRent.map((booking) => (
+                      <tr key={booking._id} className="border-b border-border">
+                        <td className="px-4 py-3 text-sm text-foreground capitalize">
+                          {booking.propertId?.propertyType || "Property"}
+                          <p className="text-xs text-muted-foreground">{booking.propertId?.propertyAddress}</p>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground">{booking.userName}</td>
+                        <td className="px-4 py-3 text-sm text-primary font-medium">
+                          {booking.propertId?.propertyAmt ? `$${booking.propertId.propertyAmt.toLocaleString()}` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                    {completedRent.length === 0 && (
+                      <tr><td colSpan={3} className="px-4 py-6 text-center text-sm text-muted-foreground">No completed rentals yet</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Properties Sold */}
+            <div>
+              <h2 className="text-xl font-bold text-foreground">Properties Sold</h2>
+              <div className="mt-4 overflow-x-auto rounded-xl border border-border">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/50">
+                      <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Property</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Sold To</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {completedSale.map((booking) => (
+                      <tr key={booking._id} className="border-b border-border">
+                        <td className="px-4 py-3 text-sm text-foreground capitalize">
+                          {booking.propertId?.propertyType || "Property"}
+                          <p className="text-xs text-muted-foreground">{booking.propertId?.propertyAddress}</p>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-foreground">{booking.userName}</td>
+                        <td className="px-4 py-3 text-sm text-primary font-medium">
+                          {booking.propertId?.propertyAmt ? `$${booking.propertId.propertyAmt.toLocaleString()}` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                    {completedSale.length === 0 && (
+                      <tr><td colSpan={3} className="px-4 py-6 text-center text-sm text-muted-foreground">No completed sales yet</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>

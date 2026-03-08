@@ -25,7 +25,10 @@ async function request<T>(
     body: isFormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
   })
 
-  const data = await res.json()
+  const contentType = res.headers.get('content-type')
+  const data = contentType?.includes('application/json')
+    ? await res.json()
+    : { message: await res.text() || 'Something went wrong' }
   if (!res.ok) {
     throw new Error(data.message || 'Something went wrong')
   }

@@ -101,7 +101,7 @@ const getOwnerBookings = async (req, res) => {
   try {
     const bookings = await bookingSchema
       .find({ ownerID: req.user.id })
-      .populate("propertId", "propertyType propertyAddress propertyAmt")
+      .populate("propertId", "propertyType propertyAddress propertyAmt propertyAdType")
       .populate("userID", "name email")
       .sort({ createdAt: -1 });
 

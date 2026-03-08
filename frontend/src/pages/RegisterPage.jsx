@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context"
 
 export default function RegisterPage() {
   const navigate = useNavigate()
-  const { register } = useAuth()
+  const { register, login } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
@@ -29,10 +29,12 @@ export default function RegisterPage() {
     try {
       const type = form.role === "owner" ? "owner" : "user"
       await register(form.name, form.email, form.password, type)
+      const user = await login(form.email, form.password)
       toast.success("Account created successfully!", {
-        description: "Welcome to HomeNest. Please sign in.",
+        description: `Welcome to HomeNest, ${user.name}!`,
       })
-      navigate("/login")
+      if (user.type === "owner") navigate("/owner")
+      else navigate("/user/dashboard")
     } catch (err) {
       toast.error("Registration failed", { description: err.message })
     } finally {
